@@ -1,38 +1,65 @@
-import { getVideoId } from "./utils/youtube";
 import { useEffect, useState } from "react";
+import { getVideoId } from "./utils/youtube";
+import { getTranscript } from "./services/transcript";
 
 function App() {
-  const [url, setUrl] = useState("");
   const [videoId, setVideoId] = useState("");
+  const [transcript, setTranscript] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     chrome.tabs.query(
       { active: true, currentWindow: true },
-      (tabs: chrome.tabs.Tab[]) => {
-        setUrl(tabs[0]?.url || "");
+      async (tabs: chrome.tabs.Tab[]) => {
         const currentUrl = tabs[0]?.url || "";
-        setUrl(currentUrl);
+
+        
         const id = getVideoId(currentUrl);
-        if (id) {
-          setVideoId(id);
-        } else {
-          setVideoId("No video ID found");
+
+        if (!id) return;
+
+        setVideoId(id);
+
+        setLoading(true);
+        
+        console.log("Video ID:", id);
+        const text = await getTranscript(id);
+        console.log("Transcript:", text);
+        
+        if (text) {
+          setTranscript(text);
         }
-      },
-      
+
+        setLoading(false);
+      }
     );
   }, []);
 
   return (
-    <div className="w-[400px] p-4">
-      <h1 className="text-xl font-bold mb-4">TubeTutor AI</h1>
+    <div className="w-96 p-4">
+      <h1 className="text-xl font-bold mb-4">
+        TubeTutor AI
+      </h1>
 
-      <p className="font-semibold">Current Video:</p>
+      <p className="font-semibold">
+        Video ID:
+      </p>
 
-      <p className="break-all text-sm">{url}</p>
-      <p className="mt-4 font-semibold">Video ID:</p>
+      <p className="mb-4 break-all text-sm">
+        {videoId}
+      </p>
 
-      <p>{videoId}</p>
+      <p className="font-semibold">
+        Transcript:
+      </p>
+
+      {loading ? (
+        <p>Loading transcript...</p>
+      ) : (
+        <p className="text-sm whitespace-pre-wrap">
+          {transcript.slice(0, 500)}
+        </p>
+      )}
     </div>
   );
 }
