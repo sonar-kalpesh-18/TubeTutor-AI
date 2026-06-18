@@ -13,7 +13,6 @@ function App() {
       async (tabs: chrome.tabs.Tab[]) => {
         const currentUrl = tabs[0]?.url || "";
 
-        
         const id = getVideoId(currentUrl);
 
         if (!id) return;
@@ -21,37 +20,38 @@ function App() {
         setVideoId(id);
 
         setLoading(true);
-        
+
         console.log("Video ID:", id);
         const text = await getTranscript(id);
         console.log("Transcript:", text);
-        
+
         if (text) {
           setTranscript(text);
         }
 
         setLoading(false);
-      }
+
+        
+        chrome.tabs.sendMessage(tabs[0].id!, { type: "PING" }, (response) => {
+          console.log(response);
+
+          if (response?.message) {
+            setTranscript(response.message);
+          }
+        });
+      },
     );
   }, []);
 
   return (
     <div className="w-96 p-4">
-      <h1 className="text-xl font-bold mb-4">
-        TubeTutor AI
-      </h1>
+      <h1 className="text-xl font-bold mb-4">TubeTutor AI</h1>
 
-      <p className="font-semibold">
-        Video ID:
-      </p>
+      <p className="font-semibold">Video ID:</p>
 
-      <p className="mb-4 break-all text-sm">
-        {videoId}
-      </p>
+      <p className="mb-4 break-all text-sm">{videoId}</p>
 
-      <p className="font-semibold">
-        Transcript:
-      </p>
+      <p className="font-semibold">Transcript:</p>
 
       {loading ? (
         <p>Loading transcript...</p>

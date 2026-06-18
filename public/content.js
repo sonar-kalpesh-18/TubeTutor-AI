@@ -1,7 +1,7 @@
 console.log("TubeTutor Content Script Loaded");
 
 chrome.runtime.onMessage.addListener(
-  (message, _sender, sendResponse) => {
+  (message, sender, sendResponse) => {
     if (message.type === "PING") {
       sendResponse({
         success: true,
