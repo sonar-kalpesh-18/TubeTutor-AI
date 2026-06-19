@@ -31,12 +31,13 @@ function App() {
 
         setLoading(false);
 
-        
+
         chrome.tabs.sendMessage(tabs[0].id!, { type: "PING" }, (response) => {
           console.log(response);
 
           if (response?.message) {
-            setTranscript(response.message);
+            setTranscript(response?.title || "No title found");
+            console.log(response);
           }
         });
       },
@@ -57,7 +58,7 @@ function App() {
         <p>Loading transcript...</p>
       ) : (
         <p className="text-sm whitespace-pre-wrap">
-          {transcript.slice(0, 500)}
+          {transcript ? transcript.slice(0, 500) : "No data"}
         </p>
       )}
     </div>
