@@ -1,38 +1,66 @@
 import { useEffect, useState } from "react";
 import { getVideoId } from "./utils/youtube";
-import { getTranscript } from "./services/transcript";
-import { generateSummary } from "./services/gemini";
+import { generateSummary, extractConcepts } from "./services/gemini";
 import { cleanTranscript } from "./utils/cleanTranscript";
-import { extractConcepts } from "./services/gemini";
 
 function App() {
   const [videoId, setVideoId] = useState("");
   const [transcript, setTranscript] = useState("");
+
+  const [summary, setSummary] = useState("");
+  const [summaryLoading, setSummaryLoading] = useState(false);
+
+  const [concepts, setConcepts] = useState("");
+  const [conceptsLoading, setConceptsLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
-  const [_summary, setSummary] = useState("");
-  const [_summaryLoading, setSummaryLoading] = useState(false);
-  const [_concepts, setConcepts] = useState("");
 
   async function handleSummary() {
-    setSummaryLoading(true);
-    const cleanedTranscript = cleanTranscript(transcript);
-    const result = await generateSummary(cleanedTranscript);
-    console.log("Gemini Response:", result);
-    setSummary(result);
+    if (!transcript) return;
 
-    setSummaryLoading(false);
+    try {
+      setSummaryLoading(true);
+
+      const cleanedTranscript = cleanTranscript(transcript);
+
+      const result = await generateSummary(cleanedTranscript);
+
+      console.log("Gemini Summary:", result);
+
+      setSummary(result);
+    } catch (error) {
+      console.error(error);
+      setSummary("Failed to generate summary.");
+    } finally {
+      setSummaryLoading(false);
+    }
   }
 
   async function handleConcepts() {
-    const result = await extractConcepts(transcript);
+    if (!transcript) return;
 
-    setConcepts(result);
+    try {
+      setConceptsLoading(true);
+
+      const cleanedTranscript = cleanTranscript(transcript);
+
+      const result = await extractConcepts(cleanedTranscript);
+
+      console.log("Concepts:", result);
+
+      setConcepts(result);
+    } catch (error) {
+      console.error(error);
+      setConcepts("Failed to extract concepts.");
+    } finally {
+      setConceptsLoading(false);
+    }
   }
 
   useEffect(() => {
     chrome.tabs.query(
       { active: true, currentWindow: true },
-      async (tabs: chrome.tabs.Tab[]) => {
+      (tabs: chrome.tabs.Tab[]) => {
         const currentUrl = tabs[0]?.url || "";
 
         const id = getVideoId(currentUrl);
@@ -43,90 +71,98 @@ function App() {
 
         setLoading(true);
 
-        console.log("Video ID:", id);
-        const text = await getTranscript(id);
-        console.log("Transcript:", text);
-
-        if (text) {
-          setTranscript(text);
-        }
-
-        setLoading(false);
-
-        chrome.tabs.sendMessage(tabs[0].id!, { type: "PING" }, (response) => {
-          console.log(response);
-
-          if (response.success) {
-            setTranscript(response.transcript || "No transcript found");
-          } else {
-            setTranscript(response.error || "Something went wrong");
-          }
-          setTranscript(
-            response.transcriptFound
-              ? "Transcript button found"
-              : "Transcript button not found",
-          );
-
-          if (response.transcriptCount > 0) {
-            setTranscript(response.transcript);
-          } else {
-            setTranscript("Transcript panel not opened yet");
-          }
-
-          if (response?.message) {
-            setTranscript(response?.title || "No title found");
+        chrome.tabs.sendMessage(
+          tabs[0].id!,
+          { type: "PING" },
+          (response) => {
             console.log(response);
+
+            if (response?.success) {
+              setTranscript(response.transcript || "");
+            } else {
+              setTranscript("");
+            }
+
+            setLoading(false);
           }
-        });
-      },
+        );
+      }
     );
   }, []);
 
   return (
-    <div className="w-96 p-4">
-      <h1 className="text-xl font-bold mb-4">TubeTutor AI</h1>
+    <div className="w-[450px] p-4">
+      <h1 className="text-2xl font-bold mb-4">
+        TubeTutor AI
+      </h1>
 
-      <p className="font-semibold">Video ID:</p>
+      <p className="font-semibold">
+        Video ID
+      </p>
 
-      <p className="mb-4 break-all text-sm">{videoId}</p>
+      <p className="mb-4 text-sm break-all">
+        {videoId}
+      </p>
 
-      <button
-        onClick={handleSummary}
-        className="bg-black text-white px-4 py-2 rounded"
-      >
-        Generate Summary
-      </button>
+      <div className="flex gap-2 mb-4">
+        <button
+          onClick={handleSummary}
+          className="bg-black text-white px-4 py-2 rounded"
+        >
+          Generate Summary
+        </button>
 
-      <button
-        onClick={handleConcepts}
-        className="bg-black text-white px-4 py-2 rounded"
-      >
-        Extract Concepts
-      </button>
+        <button
+          onClick={handleConcepts}
+          className="bg-black text-white px-4 py-2 rounded"
+        >
+          Extract Concepts
+        </button>
+      </div>
 
-      <div className="mt-4">
-        <h2 className="font-bold">Summary</h2>
+      <div className="mb-6">
+        <h2 className="font-bold text-lg mb-2">
+          Summary
+        </h2>
 
-        {_summaryLoading ? (
-          <p>Generating...</p>
+        {summaryLoading ? (
+          <p>Generating summary...</p>
         ) : (
-          <p className="whitespace-pre-wrap">{_summary}</p>
+          <p className="whitespace-pre-wrap text-sm">
+            {summary}
+          </p>
         )}
       </div>
 
-      <h2 className="font-bold mt-6">Key Concepts</h2>
+      <div className="mb-6">
+        <h2 className="font-bold text-lg mb-2">
+          Key Concepts
+        </h2>
 
-      <p className="whitespace-pre-wrap">{_concepts}</p>
+        {conceptsLoading ? (
+          <p>Extracting concepts...</p>
+        ) : (
+          <p className="whitespace-pre-wrap text-sm">
+            {concepts}
+          </p>
+        )}
+      </div>
 
-      <p className="font-semibold">Transcript:</p>
+      <div>
+        <h2 className="font-bold text-lg mb-2">
+          Transcript Status
+        </h2>
 
-      {loading ? (
-        <p>Loading transcript...</p>
-      ) : (
-        <p className="text-sm whitespace-pre-wrap">
-          {transcript ? "Transcript found" : "No data"}
-        </p>
-      )}
+        {loading ? (
+          <p>Loading transcript...</p>
+        ) : (
+          <p>
+            {transcript
+              ? "✅ Transcript loaded"
+              : "❌ Transcript not found"}
+          </p>
+        )}
+      </div>
     </div>
   );
 }
