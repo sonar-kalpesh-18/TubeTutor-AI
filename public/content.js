@@ -7,9 +7,18 @@ chrome.runtime.onMessage.addListener(
         document.querySelector(
           "h1.ytd-watch-metadata yt-formatted-string"
         )?.textContent || "No title found";
+
+ const transcriptButton =
+        [...document.querySelectorAll("button")]
+          .find(btn =>
+            btn.textContent?.toLowerCase().includes("transcript")
+          );
+
       sendResponse({
         success: true,
         title,
+        transcriptFound: !!transcriptButton,
+        transcriptText: transcriptButton?.textContent || null,
       });
     }
 
