@@ -33,6 +33,12 @@ function App() {
 
         chrome.tabs.sendMessage(tabs[0].id!, { type: "PING" }, (response) => {
           console.log(response);
+
+          if (response.success) {
+            setTranscript(response.transcript || "No transcript found");
+          } else {
+            setTranscript(response.error || "Something went wrong");
+          }
           setTranscript(
             response.transcriptFound
               ? "Transcript button found"
