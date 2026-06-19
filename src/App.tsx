@@ -3,6 +3,7 @@ import { getVideoId } from "./utils/youtube";
 import { getTranscript } from "./services/transcript";
 import { generateSummary } from "./services/gemini";
 import { cleanTranscript } from "./utils/cleanTranscript";
+import { extractConcepts } from "./services/gemini";
 
 function App() {
   const [videoId, setVideoId] = useState("");
@@ -10,6 +11,7 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [_summary, setSummary] = useState("");
   const [_summaryLoading, setSummaryLoading] = useState(false);
+  const [_concepts, setConcepts] = useState("");
 
   async function handleSummary() {
     setSummaryLoading(true);
@@ -19,6 +21,12 @@ function App() {
     setSummary(result);
 
     setSummaryLoading(false);
+  }
+
+  async function handleConcepts() {
+    const result = await extractConcepts(transcript);
+
+    setConcepts(result);
   }
 
   useEffect(() => {
@@ -89,6 +97,13 @@ function App() {
         Generate Summary
       </button>
 
+      <button
+        onClick={handleConcepts}
+        className="bg-black text-white px-4 py-2 rounded"
+      >
+        Extract Concepts
+      </button>
+
       <div className="mt-4">
         <h2 className="font-bold">Summary</h2>
 
@@ -98,6 +113,10 @@ function App() {
           <p className="whitespace-pre-wrap">{_summary}</p>
         )}
       </div>
+
+      <h2 className="font-bold mt-6">Key Concepts</h2>
+
+      <p className="whitespace-pre-wrap">{_concepts}</p>
 
       <p className="font-semibold">Transcript:</p>
 

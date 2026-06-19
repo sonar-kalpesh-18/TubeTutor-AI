@@ -22,3 +22,28 @@ export async function generateSummary(transcript: string) {
 
   return result.response.text();
 }
+
+export async function extractConcepts(
+  transcript: string
+) {
+  const model = genAI.getGenerativeModel({
+    model: "gemini-2.5-flash",
+  });
+
+  const prompt = `
+  Extract the 10 most important concepts.
+
+  Format:
+
+  Concept Name:
+  One line explanation
+
+  Transcript:
+  ${transcript}
+  `;
+
+  const result =
+    await model.generateContent(prompt);
+
+  return result.response.text();
+}
