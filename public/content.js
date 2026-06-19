@@ -1,24 +1,25 @@
-console.log("TubeTutor Content Script Loaded");
-
 chrome.runtime.onMessage.addListener(
   (message, sender, sendResponse) => {
     if (message.type === "PING") {
-       const title =
+
+      const title =
         document.querySelector(
           "h1.ytd-watch-metadata yt-formatted-string"
         )?.textContent || "No title found";
 
- const transcriptButton =
-        [...document.querySelectorAll("button")]
-          .find(btn =>
-            btn.textContent?.toLowerCase().includes("transcript")
-          );
+      const transcriptSegments = document.querySelectorAll(
+        "ytd-transcript-segment-renderer"
+      );
+
+      const transcript = Array.from(transcriptSegments)
+        .map(segment => segment.textContent?.trim())
+        .join(" ");
 
       sendResponse({
         success: true,
         title,
-        transcriptFound: !!transcriptButton,
-        transcriptText: transcriptButton?.textContent || null,
+        transcript,
+        transcriptCount: transcriptSegments.length
       });
     }
 

@@ -38,6 +38,13 @@ function App() {
               ? "Transcript button found"
               : "Transcript button not found",
           );
+
+          if (response.transcriptCount > 0) {
+            setTranscript(response.transcript);
+          } else {
+            setTranscript("Transcript panel not opened yet");
+          }
+
           if (response?.message) {
             setTranscript(response?.title || "No title found");
             console.log(response);
